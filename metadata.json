@@ -1,0 +1,5 @@
+{
+  "name": "GearGuard Maintenance Manager",
+  "description": "A production-grade maintenance management system for tracking equipment, managing teams, and handling maintenance request lifecycles with role-based access control.",
+  "requestFramePermissions": []
+}
