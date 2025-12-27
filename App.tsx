@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,9 +12,15 @@ import Equipment from './pages/Equipment';
 import Calendar from './pages/Calendar';
 import Teams from './pages/Teams';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-// Initial Mock Data
 const INITIAL_EQUIPMENT: EquipmentType[] = [
   { id: '1', name: 'CNC Milling Machine V2', serialNumber: 'CNC-88291', category: 'Heavy Machinery', company: 'Factory Floor A', location: 'Section 12', workCenter: 'WC-01', health: 85, openRequestCount: 0, status: 'active', technicianId: 'tech1', teamId: '1' },
   { id: '2', name: 'Industrial Forklift', serialNumber: 'FORK-3312', category: 'Vehicles', company: 'Warehouse B', location: 'Dock 4', workCenter: 'WC-05', health: 25, openRequestCount: 2, status: 'active', technicianId: 'tech2', teamId: '1' },
@@ -39,7 +44,6 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   
-  // App State
   const [equipment, setEquipment] = useState<EquipmentType[]>(INITIAL_EQUIPMENT);
   const [requests, setRequests] = useState<MaintenanceRequest[]>(INITIAL_REQUESTS);
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
@@ -51,14 +55,18 @@ const App: React.FC = () => {
   ]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('gearguard_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+    try {
+      const storedUser = localStorage.getItem('gearguard_user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+      }
+    } catch (e) {
+      console.error('Session restoration failed:', e);
     }
   }, []);
 
-  const handleLogin = (userData: any) => {
+  const handleLogin = (userData: User) => {
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('gearguard_user', JSON.stringify(userData));
@@ -70,43 +78,25 @@ const App: React.FC = () => {
     localStorage.removeItem('gearguard_user');
   };
 
-  const addRequest = (newRequest: MaintenanceRequest) => {
-    setRequests(prev => [newRequest, ...prev]);
-  };
-
-  const addEquipment = (newItem: EquipmentType) => {
-    setEquipment(prev => [...prev, newItem]);
-  };
-
-  const addTeam = (newTeam: Team) => {
-    setTeams(prev => [...prev, newTeam]);
-  };
-
-  const updateTeam = (updatedTeam: Team) => {
-    setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
-  };
-
-  const addUser = (newUser: User) => {
-    setUsers(prev => [...prev, newUser]);
-  };
+  const addRequest = (newRequest: MaintenanceRequest) => setRequests(prev => [newRequest, ...prev]);
+  const addEquipment = (newItem: EquipmentType) => setEquipment(prev => [...prev, newItem]);
+  const addTeam = (newTeam: Team) => setTeams(prev => [...prev, newTeam]);
+  const updateTeam = (updatedTeam: Team) => setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
+  const addUser = (newUser: User) => setUsers(prev => [...prev, newUser]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <HashRouter>
         <Routes>
-          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
+          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />} />
           <Route 
             path="/login" 
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />} 
+            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />} 
           />
-          <Route 
-            path="/forgot-password" 
-            element={<ForgotPassword />} 
-          />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           
           <Route 
-            path="/" 
-            element={isAuthenticated ? <Layout user={user!} onLogout={handleLogout} onAddRequest={addRequest} equipment={equipment} teams={teams} /> : <Navigate to="/" />}
+            element={isAuthenticated ? <Layout user={user!} onLogout={handleLogout} onAddRequest={addRequest} equipment={equipment} teams={teams} /> : <Navigate to="/" replace />}
           >
             <Route path="dashboard" element={<Dashboard user={user!} requests={requests} equipment={equipment} teams={teams} />} />
             <Route path="maintenance" element={<Requests user={user!} requests={requests} equipment={equipment} teams={teams} onAddRequest={addRequest} />} />
@@ -114,6 +104,8 @@ const App: React.FC = () => {
             <Route path="calendar" element={<Calendar user={user!} requests={requests} />} />
             <Route path="teams" element={<Teams user={user!} teams={teams} users={users} onAddTeam={addTeam} onAddUser={addUser} onUpdateTeam={updateTeam} />} />
           </Route>
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
     </QueryClientProvider>
