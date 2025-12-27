@@ -70,7 +70,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">Security Password</label>
-                {/* Removed invalid 'size' prop from Link component */}
                 <Link to="/forgot-password" className="text-[10px] font-bold uppercase text-blue-500 hover:text-blue-400">Recovery Access</Link>
               </div>
               <div className="relative">
